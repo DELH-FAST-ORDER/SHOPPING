@@ -218,19 +218,25 @@ function logout() {
     window.location.reload();
   }
 }
-
 function resetProducts() {
-  const password = prompt("Enter reset password:");
-  if (password === "ABHINAV07") {
+  const input = prompt("Enter reset password or type 'ORDER' to view orders:");
+
+  if (!input) {
+    alert("Cancelled.");
+    return;
+  }
+
+  if (input === "ABHINAV07") {
     localStorage.removeItem("shoppingProducts");
     alert("All products have been reset.");
-
-    // Also clear from screen
     document.getElementById("productContainer").innerHTML = "<p class='text-center text-muted'>No products available.</p>";
+  } else if (input.toUpperCase() === "ORDER") {
+    window.location.href = "orders.html";
   } else {
-    alert("Incorrect password. Reset cancelled.");
+    alert("Incorrect input. Reset cancelled.");
   }
 }
+
 window.onload = loadCustomerData;
 </script>
 
