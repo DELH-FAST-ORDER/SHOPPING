@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Delh Fast - Customer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { font-family: Arial; background-color: #f4f4f4; padding-bottom: 80px; }
+    .container { margin-top: 20px; }
+    .product-card {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 10px;
+      margin: 10px 0;
+      background: #fff;
+    }
+    #cartSection {
+      position: fixed;
+      top: 60px;
+      right: 10px;
+      width: 320px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 10px;
+      z-index: 999;
+      display: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    .cart-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .cart-item select {
+      width: 60px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container" id="loginSection">
+  <h2 class="text-center">Delh Fast - Login</h2>
+  <input type="text" id="custName" class="form-control my-2" placeholder="Your Name" required />
+  <input type="text" id="custMobile" class="form-control my-2" placeholder="Mobile Number" required />
+  <input type="text" id="custAddress" class="form-control my-2" placeholder="Your Address" required />
+  <button class="btn btn-primary w-100 my-2" onclick="login()">Login</button>
+</div>
+
+<!-- Grocery Section -->
+<div class="container d-none" id="grocerySection">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2 class="text-center flex-grow-1">Grocery Items</h2>
+    <button class="btn btn-success" onclick="toggleCart()">View Cart</button>
+  </div>
+  <div class="row" id="productContainer"></div>
+
+<div class="d-flex justify-content-end mb-3">
+  <button class="btn btn-outline-danger me-2" onclick="resetProducts()">Reset Products</button>
+  <button class="btn btn-outline-secondary" onclick="logout()">Logout</button>
+</div>
+</div>
+<!-- Cart Section -->
+<div id="cartSection">
+  <h5>Your Cart</h5>
+  <div id="cartItems"></div>
+  <button class="btn btn-primary w-100 mt-2" onclick="submitCart()">Submit Cart</button>
+</div>
+
+<script>
+let customer = {};
+let cart = JSON.parse(localStorage.getItem("delhFastCart") || "[]");
+
+function login() {
+  const name = document.getElementById('custName').value.trim();
+  const mobile = document.getElementById('custMobile').value.trim();
+  const address = document.getElementById('custAddress').value.trim();
+
+  if (!name || !mobile || !address) {
+    alert("Please fill all fields.");
+    return;
+  }
+
+  customer = { name, mobile, address };
+  localStorage.setItem('delhFastCustomer', JSON.stringify(customer));
+  document.getElementById('loginSection').classList.add('d-none');
+  document.getElementById('grocerySection').classList.remove('d-none');
+  loadGroceryProducts();
+  renderCart();
+}
+
+function loadCustomerData() {
+  const saved = localStorage.getItem('delhFastCustomer');
+  if (saved) {
+    customer = JSON.parse(saved);
+    document.getElementById('loginSection').classList.add('d-none');
+    document.getElementById('grocerySection').classList.remove('d-none');
+    loadGroceryProducts();
+    renderCart();
+  }
+}
+
+function loadGroceryProducts() {
+  const products = JSON.parse(localStorage.getItem('shoppingProducts')) || [];
+  const container = document.getElementById('productContainer');
+  container.innerHTML = "";
+
+  const groceries = products.filter(p => p.category?.toLowerCase() === "grocery");
+
+  groceries.forEach((p, index) => {
+    const div = document.createElement("div");
+    div.className = "col-6 col-md-4";
+    div.innerHTML = `
+      <div class="product-card text-center">
+        ${p.imageUrl ? `<img src="${p.imageUrl}" class="img-fluid mb-2" style="max-height:100px;">` : ''}
+        <h6>${p.name}</h6>
+        <p><strong>₹${p.price}</strong></p>
+        ${p.description ? `<p><em>${p.description}</em></p>` : ''}
+        ${p.shopName ? `<p><small><strong>Shop:</strong> ${p.shopName}</small></p>` : ''}
+        <button class="btn btn-sm btn-primary" onclick="addToCart(${index})">Add to Cart</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function addToCart(index) {
+  const products = JSON.parse(localStorage.getItem('shoppingProducts')) || [];
+  const groceries = products.filter(p => p.category?.toLowerCase() === "grocery");
+  const selectedProduct = { ...groceries[index], quantity: 1 };
+  cart.push(selectedProduct);
+  localStorage.setItem("delhFastCart", JSON.stringify(cart));
+  alert(`${groceries[index].name} added to cart.`);
+  renderCart();
+}
+
+function toggleCart() {
+  const cartSec = document.getElementById('cartSection');
+  cartSec.style.display = cartSec.style.display === 'none' ? 'block' : 'none';
+  renderCart();
+}
+
+function renderCart() {
+  const cartItems = document.getElementById('cartItems');
+  cartItems.innerHTML = "";
+
+  if (cart.length === 0) {
+    cartItems.innerHTML = "<p>Your cart is empty.</p>";
+    return;
+  }
+
+  cart.forEach((item, i) => {
+    cartItems.innerHTML += `
+      <div class="cart-item">
+        <div class="d-flex align-items-center">
+          ${item.imageUrl ? `<img src="${item.imageUrl}" style="width:40px; height:40px; object-fit:cover; border-radius:5px; margin-right:10px;">` : ''}
+          <span>${item.name}</span>
+        </div>
+        <div class="d-flex align-items-center">
+          <select class="form-select form-select-sm me-2" style="width:auto;" onchange="updateQuantity(${i}, this.value)">
+            ${[...Array(10).keys()].map(n => `<option value="${n+1}" ${item.quantity == n+1 ? "selected" : ""}>${n+1}</option>`).join('')}
+          </select>
+          <button class="btn btn-sm btn-danger" onclick="removeFromCart(${i})">X</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function updateQuantity(index, qty) {
+  cart[index].quantity = parseInt(qty);
+  localStorage.setItem("delhFastCart", JSON.stringify(cart));
+  renderCart();
+}
+
+function removeFromCart(index) {
+  cart.splice(index, 1);
+  localStorage.setItem("delhFastCart", JSON.stringify(cart));
+  renderCart();
+}
+
+function submitCart() {
+  if (cart.length === 0) {
+    alert("No items in cart!");
+    return;
+  }
+
+  const customerData = JSON.parse(localStorage.getItem("delhFastCustomer") || "{}");
+
+  if (!customerData.name || !customerData.mobile || !customerData.address) {
+    alert("Customer not logged in. Please log in again.");
+    return;
+  }
+
+  const order = {
+    name: customerData.name,
+    mobile: customerData.mobile,
+    address: customerData.address,
+    products: cart,
+    date: new Date().toLocaleDateString(),
+    time: new Date().toLocaleTimeString()
+  };
+
+  const existingOrders = JSON.parse(localStorage.getItem("delhFastOrders") || "[]");
+  existingOrders.push(order);
+  localStorage.setItem("delhFastOrders", JSON.stringify(existingOrders));
+  localStorage.removeItem("delhFastCart");
+
+  alert("Order placed successfully!");
+  window.location.reload();
+}
+function logout() {
+  if (confirm("Are you sure you want to logout?")) {
+    localStorage.removeItem("delhFastCustomer");
+    localStorage.removeItem("delhFastCart");
+    window.location.reload();
+  }
+}
+
+function resetProducts() {
+  const password = prompt("Enter reset password:");
+  if (password === "ABHINAV07") {
+    localStorage.removeItem("shoppingProducts");
+    alert("All products have been reset.");
+
+    // Also clear from screen
+    document.getElementById("productContainer").innerHTML = "<p class='text-center text-muted'>No products available.</p>";
+  } else {
+    alert("Incorrect password. Reset cancelled.");
+  }
+}
+window.onload = loadCustomerData;
+</script>
+
+</body>
+</html>
