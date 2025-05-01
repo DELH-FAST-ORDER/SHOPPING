@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Delh Fast - Orders Table</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: white;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    #resetBtn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #d9534f;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #deliveryOrderBtn {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .generate-bill-btn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .bill-content {
+      padding: 20px;
+      background: white;
+    }
+    .bill-content table {
+      width: 100%;
+      margin-top: 10px;
+      border-collapse: collapse;
+    }
+    .bill-content th, .bill-content td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    img.product-thumb {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Delh Fast - Order History</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Address</th>
+      <th>Mobile</th>
+      <th>Products</th>
+      <th>Images</th>
+      <th>Descriptions</th>
+      <th>Shop</th>
+      <th>Date</th>
+      <th>Time</th>
+      <th>Bill</th>
+    </tr>
+  </thead>
+  <tbody id="orderTableBody"></tbody>
+</table>
+
+<button id="resetBtn" onclick="resetOrders()">Reset</button>
+<button id="deliveryOrderBtn" onclick="window.location.href='deliveryorder.html'">Delivery Orders</button>
+<div id="billSection" style="display:none;"></div>
+
+<script>
+function loadOrders() {
+  const orders = JSON.parse(localStorage.getItem("delhFastOrders")) || [];
+  const tbody = document.getElementById("orderTableBody");
+  tbody.innerHTML = "";
+
+  if (orders.length === 0) {
+    tbody.innerHTML = "<tr><td colspan='10' style='text-align:center;'>No orders found</td></tr>";
+    return;
+  }
+
+  orders.forEach((order, index) => {
+    let productDetails = "";
+    let productImages = "";
+    let productDescriptions = "";
+    let productShops = "";
+
+    if (order.products && Array.isArray(order.products)) {
+      productDetails = order.products.map(p => `${p.name} - ₹${p.price} x ${p.quantity || 1}`).join("<br>");
+      productImages = order.products.map(p => `<img class='product-thumb' src='${p.imageUrl || p.image || ""}' alt='${p.name}'>`).join("");
+      productDescriptions = order.products.map(p => `${p.description || "-"}`).join("<br>");
+      productShops = order.products.map(p => `${p.shop || "-"}`).join("<br>");
+    }
+
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${order.name || "Unknown"}</td>
+      <td>${order.address || "N/A"}</td>
+      <td>${order.mobile || "N/A"}</td>
+      <td>${productDetails}</td>
+      <td>${productImages}</td>
+      <td>${productDescriptions}</td>
+      <td>${productShops}</td>
+      <td>${order.date || "-"}</td>
+      <td>${order.time || "-"}</td>
+      <td><button class="generate-bill-btn" onclick="generateBill(${index})">Generate Bill</button></td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+function resetOrders() {
+  if (confirm("Are you sure you want to clear all order data?")) {
+    localStorage.removeItem("delhFastOrders");
+    loadOrders();
+  }
+}
+
+function generateBill(orderIndex) {
+  const orders = JSON.parse(localStorage.getItem("delhFastOrders")) || [];
+  const order = orders[orderIndex];
+  if (!order) return alert("Order not found");
+
+  let discount = prompt("Enter Discount Amount:");
+  discount = parseFloat(discount) || 0;
+
+  let subtotal = 0;
+  let productsTable = "";
+
+  order.products.forEach(p => {
+    const qty = p.quantity || 1;
+    const total = p.price * qty;
+    subtotal += total;
+    productsTable += `
+      <tr>
+        <td><img src="${p.image}" style="width:60px; height:60px; object-fit:cover;"></td>
+        <td>${p.name}<br><small>${p.description || ""}</small></td>
+        <td>₹${p.price}</td>
+        <td>${qty}</td>
+        <td>₹${total}</td>
+      </tr>
+    `;
+  });
+
+  const delivery = 20;
+  const finalTotal = subtotal - discount + delivery;
+
+  const billHTML = `
+    <div class="bill-content" id="billToDownload">
+      <h2 style="text-align:center;">Delh Fast - Customer Bill</h2>
+      <p><strong>Name:</strong> ${order.name}</p>
+      <p><strong>Mobile:</strong> ${order.mobile}</p>
+      <p><strong>Address:</strong> ${order.address}</p>
+      <table>
+        <thead>
+          <tr><th>Image</th><th>Product</th><th>Price</th><th>Qty</th><th>Total</th></tr>
+        </thead>
+        <tbody>
+          ${productsTable}
+        </tbody>
+      </table>
+      <p><strong>Subtotal:</strong> ₹${subtotal}</p>
+      <p><strong>Discount:</strong> ₹${discount}</p>
+      <p><strong>Delivery Charge:</strong> ₹${delivery}</p>
+      <h3><strong>Grand Total:</strong> ₹${finalTotal}</h3>
+    </div>
+  `;
+
+  document.getElementById("billSection").innerHTML = billHTML;
+
+  const element = document.getElementById("billToDownload");
+  html2pdf().set({
+    margin: 10,
+    filename: `Bill_${order.name}_${order.mobile}.pdf`,
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(element).save();
+}
+
+window.onload = loadOrders;
+</script>
+
+</body>
+</html>
