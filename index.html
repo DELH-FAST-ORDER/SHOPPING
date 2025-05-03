@@ -52,15 +52,12 @@
 <!-- Grocery Section -->
 <div class="container d-none" id="grocerySection">
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h2 class="text-center flex-grow-1">Grocery Items</h2>
+    <h2 class="text-center flex-grow-1">SHOP NOW</h2>
     <button class="btn btn-success" onclick="toggleCart()">View Cart</button>
   </div>
   <div class="row" id="productContainer"></div>
 
-<div class="d-flex justify-content-end mb-3">
-  <button class="btn btn-outline-danger me-2" onclick="resetProducts()">Reset Products</button>
-  <button class="btn btn-outline-secondary" onclick="logout()">Logout</button>
-</div>
+
 </div>
 <!-- Cart Section -->
 <div id="cartSection">
@@ -68,8 +65,44 @@
   <div id="cartItems"></div>
   <button class="btn btn-primary w-100 mt-2" onclick="submitCart()">Submit Cart</button>
 </div>
+<!-- Place this just before </body> in your index.html file -->
+<div class="position-fixed bottom-0 end-0 m-4">
+  <div class="dropdown dropup">
+    <button class="btn btn-dark rounded-circle" style="width: 60px; height: 60px;" data-bs-toggle="dropdown">
+      +
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+      <li><a class="dropdown-item" href="#" onclick="secureReset()">Reset</a></li>
+      <li><a class="dropdown-item" href="#" onclick="secureOrder()">Order</a></li>
+      <li><a class="dropdown-item" href="add_product.html">Sell</a></li>
+    </ul>
+  </div>
+</div>
 
 <script>
+function secureReset() {
+  const pwd = prompt("Enter reset password:");
+  if (pwd === "ABHINAV07") {
+    localStorage.removeItem("shoppingProducts");
+    alert("All products have been reset.");
+    const container = document.getElementById("productContainer");
+    if (container) {
+      container.innerHTML = "<p class='text-center text-muted'>No products available.</p>";
+    }
+  } else {
+    alert("Incorrect password.");
+  }
+}
+
+function secureOrder() {
+  const pwd = prompt("Enter order password:");
+  if (pwd === "ORDER07") {
+    window.location.href = "orders.html";
+  } else {
+    alert("Incorrect password.");
+  }
+}
+          </script><<script>
 let customer = {};
 let cart = JSON.parse(localStorage.getItem("delhFastCart") || "[]");
 
