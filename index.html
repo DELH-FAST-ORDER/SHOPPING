@@ -459,18 +459,6 @@ function login() {
 }
 
 
-function loadCustomerData() {
-  const saved = localStorage.getItem('delhFastCustomer');
-  if (saved) {
-    const customer = JSON.parse(saved);
-    document.getElementById('loginSection').classList.add('d-none');
-    document.getElementById('grocerySection').classList.remove('d-none');
-    document.getElementById('accountName').textContent = customer.name;
-    loadGroceryProducts();
-    document.getElementById('userPincode').textContent = customer.address?.split('-')?.[1]?.trim() || 'Pincode';
-    renderCart();
-  }
-}
 
 function editCustomer() {
   const name = prompt("Enter your name:", customer.name);
@@ -483,7 +471,23 @@ function editCustomer() {
     document.getElementById("accountName").textContent = customer.name;
     alert("Details updated.");
   } else {
-    alert("All fields are required.");
+    alert("All fieldsfunction loadCustomerData() {
+  const saved = localStorage.getItem('delhFastCustomer');
+  if (saved) {
+    const customer = JSON.parse(saved);
+    document.getElementById('loginSection').classList.add('d-none');
+    document.getElementById('grocerySection').classList.remove('d-none');
+
+    const accountNameEl = document.getElementById('accountName');
+    if (accountNameEl) {
+      accountNameEl.textContent = customer.name;
+    }
+
+    loadGroceryProducts();
+    document.getElementById('userPincode').textContent = customer.address?.split('-')?.[1]?.trim() || 'Pincode';
+    renderCart();
+  }
+  }are required.");
   }
 }
 
