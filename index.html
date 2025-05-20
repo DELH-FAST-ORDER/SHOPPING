@@ -430,8 +430,9 @@ function login() {
   // If there's an account name section, update it
   if (document.getElementById('accountName')) {
   }
-  loadGroceryProducts();
+  
 }
+    loadGroceryProducts();
     // Load products if needed
     function loadGroceryProducts() {
   const products = JSON.parse(localStorage.getItem('shoppingProducts')) || [];
