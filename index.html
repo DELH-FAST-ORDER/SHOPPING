@@ -47,7 +47,7 @@
 <input class="form-control my-2" id="custMobile" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);" placeholder="Mobile Number" required="" type="number"/>
 <select class="form-control my-2" id="custState"><option value="">Select State</option><option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option><option value="Andhra Pradesh">Andhra Pradesh</option><option value="Arunachal Pradesh">Arunachal Pradesh</option><option value="Assam">Assam</option><option value="Bihar">Bihar</option><option value="Chandigarh">Chandigarh</option><option value="Chhattisgarh">Chhattisgarh</option><option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option><option value="Delhi">Delhi</option><option value="Goa">Goa</option><option value="Gujarat">Gujarat</option><option value="Haryana">Haryana</option><option value="Himachal Pradesh">Himachal Pradesh</option><option value="Jammu and Kashmir">Jammu and Kashmir</option><option value="Jharkhand">Jharkhand</option><option value="Karnataka">Karnataka</option><option value="Kerala">Kerala</option><option value="Ladakh">Ladakh</option><option value="Lakshadweep">Lakshadweep</option><option value="Madhya Pradesh">Madhya Pradesh</option><option value="Maharashtra">Maharashtra</option><option value="Manipur">Manipur</option><option value="Meghalaya">Meghalaya</option><option value="Mizoram">Mizoram</option><option value="Nagaland">Nagaland</option><option value="Odisha">Odisha</option><option value="Puducherry">Puducherry</option><option value="Punjab">Punjab</option><option value="Rajasthan">Rajasthan</option><option value="Sikkim">Sikkim</option><option value="Tamil Nadu">Tamil Nadu</option><option value="Telangana">Telangana</option><option value="Tripura">Tripura</option><option value="Uttar Pradesh">Uttar Pradesh</option><option value="Uttarakhand">Uttarakhand</option><option value="West Bengal">West Bengal</option></select>
 <select class="form-control my-2" id="custDistrict">
-<option value="">Select District</option>
+<option value="" >Select district </option>
 </select>
 <input class="form-control my-2" id="custCity" placeholder="Enter City" type="text"/>
 <input class="form-control my-2" id="custPincode" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);" placeholder="Enter Pincode" type="number"/>
@@ -355,8 +355,149 @@ function showSavedAddresses() {
   }
 }
 </script>
+<script><script>
+function openAccount() {
+  const customer = JSON.parse(localStorage.getItem('delhFastCustomer') || '{}');
+  document.getElementById("accountUserName").textContent = customer.name || "User";
+  document.getElementById("accountOverlay").classList.remove("d-none");
+}
+
+function closeAccountOverlay() {
+  document.getElementById('accountOverlay').classList.add('d-none');
+}
+
+function editAccount() {
+  const customer = JSON.parse(localStorage.getItem('delhFastCustomer') || '{}');
+  document.getElementById('custName').value = customer.name || '';
+  document.getElementById('custMobile').value = customer.mobile || '';
+
+  if (customer.address) {
+    const parts = customer.address.split(',').map(s => s.trim());
+    document.getElementById('custStreet').value = parts[0] || '';
+    document.getElementById('custCity').value = parts[1] || '';
+    if (parts.length >= 4) {
+      document.getElementById('custDistrict').value = parts[2] || '';
+      const statePincode = parts[3].split('-').map(s => s.trim());
+      document.getElementById('custState').value = statePincode[0] || '';
+      document.getElementById('custPincode').value = statePincode[1] || '';
+    }
+  }
+
+  document.getElementById('loginSection').classList.remove('d-none');
+  document.getElementById('grocerySection').classList.add('d-none');
+  closeAccountOverlay();
+}
+
+function logout() {
+  if (confirm('Are you sure you want to logout?')) {
+    localStorage.removeItem('delhFastCustomer');
+    localStorage.removeItem('delhFastCart');
+    window.location.reload();
+  }
+}
+
+function viewOrders() {
+  const orders = JSON.parse(localStorage.getItem('delhFastOrders') || '[]');
+  const ordersList = document.getElementById('ordersList');
+  ordersList.innerHTML = '';
+
+  if (orders.length === 0) {
+    ordersList.innerHTML = '<p class="text-muted text-center">No past orders found.</p>';
+  } else {
+    orders.forEach((order, index) => {
+      const div = document.createElement('div');
+      div.className = 'border rounded p-2 mb-3';
+      div.innerHTML = `
+        <p><strong>Order #${index + 1}</strong></p>
+        <p><strong>Date:</strong> ${order.date} ${order.time}</p>
+        <p><strong>Address:</strong> ${order.address}</p>
+        <p><strong>Products:</strong></p>
+        <ul>${order.products.map(p => `<li>${p.name} (Qty: ${p.quantity})</li>`).join('')}</ul>
+      `;
+      ordersList.appendChild(div);
+    });
+  }
+
+  document.getElementById('ordersOverlay').classList.remove('d-none');
+}
+
+function closeOrdersOverlay() {
+  document.getElementById('ordersOverlay').classList.add('d-none');
+}
+
+function openSettings() {
+  document.getElementById('settingsOverlay').classList.remove('d-none');
+}
+
+function closeSettingsOverlay() {
+  document.getElementById('settingsOverlay').classList.add('d-none');
+}
+
+function openChangeAddressOverlay() {
+  const customer = JSON.parse(localStorage.getItem("delhFastCustomer") || "{}");
+  if (customer.address) {
+    document.getElementById("oldAddress").textContent = customer.address;
+    document.getElementById("newAddress").value = customer.address;
+    document.getElementById("changeAddressOverlay").classList.remove("d-none");
+
+    // Load saved addresses
+    const saved = JSON.parse(localStorage.getItem("delhFastSavedAddresses") || "[]");
+    const list = document.getElementById("savedAddressList");
+    list.innerHTML = "";
+    saved.forEach(addr => {
+      const li = document.createElement("li");
+      li.className = "list-group-item list-group-item-action";
+      li.textContent = addr;
+      li.onclick = () => {
+        document.getElementById("newAddress").value = addr;
+      };
+      list.appendChild(li);
+    });
+  }
+}
+
+function saveNewAddress() {
+  const newAddress = document.getElementById("newAddress").value.trim();
+  if (!newAddress) {
+    alert("Please enter a valid address.");
+    return;
+  }
+
+  const customer = JSON.parse(localStorage.getItem("delhFastCustomer") || "{}");
+  const saved = JSON.parse(localStorage.getItem("delhFastSavedAddresses") || "[]");
+
+  if (customer.address && customer.address !== newAddress && !saved.includes(customer.address)) {
+    saved.push(customer.address);
+    localStorage.setItem("delhFastSavedAddresses", JSON.stringify(saved));
+  }
+
+  customer.address = newAddress;
+  localStorage.setItem("delhFastCustomer", JSON.stringify(customer));
+  document.getElementById("cartUserAddress").textContent = newAddress;
+  document.getElementById("userPincode").textContent = newAddress.split("-")?.[1]?.trim() || "Pincode";
+  closeChangeAddressOverlay();
+  alert("Address updated!");
+}
+
+function closeChangeAddressOverlay() {
+  document.getElementById("changeAddressOverlay").classList.add("d-none");
+}
+
+function showSavedAddresses() {
+  const list = document.getElementById("accountSavedAddresses");
+  const saved = JSON.parse(localStorage.getItem("delhFastSavedAddresses") || "[]");
+  if (saved.length === 0) {
+    list.innerHTML = "<li class='text-muted small'>No saved addresses found.</li>";
+  } else {
+    list.innerHTML = saved.map(addr => `<li class='text-muted small'>${addr}</li>`).join("");
+  }
+}
+</script>
 <script>
-const districtsByState = {
+    function populateDistricts() {
+  const state = document.getElementById('custState').value;
+  const districtSelect = document.getElementById('custDistrict');
+        const districtsByState = {
   "Andhra Pradesh": ["Anantapur", "Chittoor", "East Godavari", "Guntur", "Krishna", "Kurnool", "Nellore", "Prakasam", "Srikakulam", "Visakhapatnam", "Vizianagaram", "West Godavari", "YSR Kadapa"],
   "Arunachal Pradesh": ["Tawang", "West Kameng", "East Kameng", "Papum Pare", "Kurung Kumey", "Kra Daadi", "Lower Subansiri", "Upper Subansiri", "West Siang", "East Siang", "Siang", "Upper Siang", "Lower Siang", "Lower Dibang Valley", "Dibang Valley", "Anjaw", "Lohit", "Namsai", "Changlang", "Tirap", "Longding"],
   "Assam": ["Baksa", "Barpeta", "Biswanath", "Bongaigaon", "Cachar", "Charaideo", "Chirang", "Darrang", "Dhemaji", "Dhubri", "Dibrugarh", "Goalpara", "Golaghat", "Hailakandi", "Hojai", "Jorhat", "Kamrup Metropolitan", "Kamrup", "Karbi Anglong", "Karimganj", "Kokrajhar", "Lakhimpur", "Majuli", "Morigaon", "Nagaon", "Nalbari", "Dima Hasao", "Sivasagar", "Sonitpur", "South Salmara-Mankachar", "Tinsukia", "Udalguri", "West Karbi Anglong"],
